@@ -1,6 +1,6 @@
 # Platzi-Exchange
 
-Leraning Vue Js From Platzi 😊
+Learning Vue Js From Platzi 😊
 
 ## Project setup
 
