@@ -73,21 +73,51 @@
         :max="max"
         :data="history.map((h) => [h.date, parseFloat(h.priceUsd).toFixed(2)])"
       />
+
+      <h3 class="text-xl my-10">Mejores Ofertas de Cambio</h3>
+      <table>
+        <tr
+          v-for="market in markets"
+          :key="`${market.exchangeId}-${market.priceUsd}`"
+          class="border-b"
+        >
+          <td>
+            <b>{{ dollarFilter(market.priceUsd) }}</b>
+          </td>
+          <td>{{ market.baseSymbol }} / {{ market.quoteSymbol }}</td>
+          <td></td>
+          <td>
+            <px-button
+              :is-loading="market.isLoading || false"
+              v-if="!market.url"
+              @custom-click="getWebsite(market)"
+            >
+              <slot>Obtener Link</slot>
+            </px-button>
+            <a v-else class="hover:underline text-green-600" target="_blanck">
+              {{ market.url }}
+            </a>
+          </td>
+        </tr>
+      </table>
     </template>
   </div>
 </template>
 
 <script>
+import PxButton from "@/components/PxButton";
 import api from "@/api";
 import { dollarFilter, percentFilter } from "@/filters";
 
 export default {
   name: "CoinDetail",
 
+  components: { PxButton },
   data() {
     return {
       asset: {},
       history: [],
+      markets: [],
       isLoading: false,
     };
   },
@@ -99,13 +129,30 @@ export default {
   methods: {
     dollarFilter,
     percentFilter,
+    getWebsite(exchange) {
+      exchange.isLoading = true;
+
+      return api
+        .getExchange(exchange.exchangeId)
+        .then((res) => {
+          exchange.url = res.exchangeUrl;
+        })
+        .finally(() => {
+          exchange.isLoading = false;
+        });
+    },
     getCoin() {
       const id = this.$route.params.id;
       this.isLoading = true;
-      Promise.all([api.getAsset(id), api.getAssetHistory(id)])
-        .then(([asset, history]) => {
+      Promise.all([
+        api.getAsset(id),
+        api.getAssetHistory(id),
+        api.getMarkets(id),
+      ])
+        .then(([asset, history, markets]) => {
           this.asset = asset;
           this.history = history;
+          this.markets = markets;
         })
         .finally(() => (this.isLoading = false));
     },
